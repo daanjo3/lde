@@ -1,3 +1,9 @@
+## 0.7.1 (2026-10-14)
+
+### 🚀 Features
+
+- **docgen:** add an expandIri filter that uses the frame’s prefixes ([#900](https://github.com/ldelements/lde/pull/900))
+
 ## 0.7.0 (2026-10-14)
 
 ### 🩹 Fixes
