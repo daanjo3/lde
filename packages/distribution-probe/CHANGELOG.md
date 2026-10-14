@@ -1,3 +1,10 @@
+## 0.2.10 (2026-10-14)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/host-limiter to 0.0.2
+- Updated @lde/dataset to 0.7.10
+
 ## 0.2.9 (2026-08-24)
 
 ### 🚀 Features

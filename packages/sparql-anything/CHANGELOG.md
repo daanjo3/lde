@@ -1,3 +1,9 @@
+## 0.1.9 (2026-10-14)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/task-runner to 0.2.16
+
 ## 0.1.8 (2026-09-21)
 
 ### 🚀 Features

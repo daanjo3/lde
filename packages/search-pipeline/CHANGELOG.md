@@ -1,3 +1,13 @@
+## 0.29.4 (2026-10-14)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/local-sparql-endpoint to 0.2.16
+- Updated @lde/search-typesense to 0.32.4
+- Updated @lde/pipeline to 0.36.9
+- Updated @lde/dataset to 0.7.10
+- Updated @lde/search to 0.27.2
+
 ## 0.29.3 (2026-10-14)
 
 ### 🧱 Updated Dependencies

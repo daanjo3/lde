@@ -1,3 +1,15 @@
+## 0.16.3 (2026-10-14)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/distribution-downloader to 0.6.10
+- Updated @lde/task-runner-docker to 0.3.2
+- Updated @lde/task-runner-native to 0.2.20
+- Updated @lde/sparql-importer to 0.6.13
+- Updated @lde/wait-for-sparql to 0.2.18
+- Updated @lde/task-runner to 0.2.16
+- Updated @lde/dataset to 0.7.10
+
 ## 0.16.2 (2026-09-21)
 
 ### 🧱 Updated Dependencies

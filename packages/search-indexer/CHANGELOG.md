@@ -1,3 +1,15 @@
+## 0.19.4 (2026-10-14)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/pipeline-console-reporter to 0.27.9
+- Updated @lde/dataset-registry-client to 0.9.5
+- Updated @lde/search-typesense to 0.32.4
+- Updated @lde/search-pipeline to 0.29.4
+- Updated @lde/sparql-qlever to 0.16.3
+- Updated @lde/pipeline to 0.36.9
+- Updated @lde/search to 0.27.2
+
 ## 0.19.3 (2026-10-14)
 
 ### 🧱 Updated Dependencies
