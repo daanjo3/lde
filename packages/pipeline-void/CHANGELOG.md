@@ -1,3 +1,13 @@
+## 0.35.9 (2026-10-14)
+
+### 🩹 Fixes
+
+- **pipeline-void:** group hash IRIs by document in subject URI spaces ([#899](https://github.com/ldelements/lde/pull/899))
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/pipeline to 0.36.8
+
 ## 0.35.8 (2026-09-21)
 
 ### 🧱 Updated Dependencies

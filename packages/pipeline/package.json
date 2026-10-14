@@ -1,6 +1,6 @@
 {
   "name": "@lde/pipeline",
-  "version": "0.36.7",
+  "version": "0.36.8",
   "repository": {
     "url": "git+https://github.com/ldelements/lde.git",
     "directory": "packages/pipeline"
@@ -25,7 +25,7 @@
   ],
   "dependencies": {
     "@lde/dataset": "^0.7.9",
-    "@lde/dataset-registry-client": "^0.9.3",
+    "@lde/dataset-registry-client": "^0.9.4",
     "@lde/distribution-health": "^0.2.14",
     "@lde/distribution-probe": "^0.2.9",
     "@lde/sparql-importer": "^0.6.12",
