@@ -1,3 +1,9 @@
+## 0.9.4 (2026-10-14)
+
+### 🩹 Fixes
+
+- **dataset-registry-client:** drop workaround for LDkit count() ignoring $id ([#875](https://github.com/ldelements/lde/pull/875))
+
 ## 0.9.3 (2026-08-24)
 
 This was a version bump only for @lde/dataset-registry-client to align it with other projects, there were no code changes.
