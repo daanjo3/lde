@@ -1,3 +1,9 @@
+## 0.7.3 (2026-10-15)
+
+### 🩹 Fixes
+
+- **docgen:** render a template in a subfolder given a relative path ([#904](https://github.com/ldelements/lde/pull/904))
+
 ## 0.7.2 (2026-10-14)
 
 This was a version bump only for @lde/docgen to align it with other projects, there were no code changes.
