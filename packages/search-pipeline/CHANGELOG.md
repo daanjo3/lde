@@ -1,3 +1,17 @@
+## 0.30.0 (2026-10-15)
+
+### 🔥 Performance
+
+- **search-pipeline:** select distinct roots in selectByClass ([#902](https://github.com/ldelements/lde/pull/902))
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/local-sparql-endpoint to 0.3.0
+- Updated @lde/search-typesense to 0.33.0
+- Updated @lde/pipeline to 0.37.0
+- Updated @lde/dataset to 0.8.0
+- Updated @lde/search to 0.28.0
+
 ## 0.29.4 (2026-10-14)
 
 ### 🧱 Updated Dependencies

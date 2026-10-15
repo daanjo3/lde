@@ -1,3 +1,11 @@
+## 0.36.0 (2026-10-15)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/local-sparql-endpoint to 0.3.0
+- Updated @lde/pipeline to 0.37.0
+- Updated @lde/dataset to 0.8.0
+
 ## 0.35.10 (2026-10-14)
 
 ### 🧱 Updated Dependencies

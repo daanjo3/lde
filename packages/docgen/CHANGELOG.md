@@ -1,3 +1,7 @@
+## 0.8.0 (2026-10-15)
+
+This was a version bump only for @lde/docgen to align it with other projects, there were no code changes.
+
 ## 0.7.3 (2026-10-15)
 
 ### 🩹 Fixes

@@ -1,3 +1,11 @@
+## 0.7.0 (2026-10-15)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/distribution-downloader to 0.7.0
+- Updated @lde/task-runner to 0.3.0
+- Updated @lde/dataset to 0.8.0
+
 ## 0.6.13 (2026-10-14)
 
 ### 🧱 Updated Dependencies

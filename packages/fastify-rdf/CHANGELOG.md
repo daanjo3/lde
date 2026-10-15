@@ -1,3 +1,7 @@
+## 0.6.0 (2026-10-15)
+
+This was a version bump only for @lde/fastify-rdf to align it with other projects, there were no code changes.
+
 ## 0.5.3 (2026-10-14)
 
 ### 🚀 Features
