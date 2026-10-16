@@ -1,3 +1,10 @@
+## 0.38.0 (2026-10-16)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/distribution-health to 0.4.0
+- Updated @lde/sparql-importer to 0.8.0
+
 ## 0.37.0 (2026-10-15)
 
 ### 🧱 Updated Dependencies

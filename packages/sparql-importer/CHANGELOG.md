@@ -1,3 +1,7 @@
+## 0.8.0 (2026-10-16)
+
+This was a version bump only for @lde/sparql-importer to align it with other projects, there were no code changes.
+
 ## 0.7.0 (2026-10-15)
 
 ### 🧱 Updated Dependencies
