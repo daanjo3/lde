@@ -1,3 +1,9 @@
+## 0.30.1 (2026-10-16)
+
+### 🩹 Fixes
+
+- **search-api-graphql:** flatten fragments in depth and cost limits ([#916](https://github.com/ldelements/lde/pull/916))
+
 ## 0.30.0 (2026-10-15)
 
 ### 🧱 Updated Dependencies
