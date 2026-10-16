@@ -5,6 +5,7 @@ import {
   GraphQLFloat,
   GraphQLInputObjectType,
   GraphQLInt,
+  GraphQLInterfaceType,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -19,9 +20,11 @@ import {
   type GraphQLOutputType,
 } from 'graphql';
 import {
+  NESTED_DOCUMENT_TYPE,
   type Criterion,
   type Filter,
   type LocalizedValue,
+  type NestedDocument,
   type RootType,
   type SearchEngine,
   type ReferenceField,
@@ -35,8 +38,10 @@ import {
   AND_KEY,
   facetableFields,
   filterableFields,
-  labelTargetNameOf,
-  localLookupTypeOf,
+  fieldNamed,
+  labelSourceNamesOf,
+  labelTargetNamesOf,
+  localLookupTargetsOf,
   referenceFields,
   filterOn,
   filterOperatorFor,
@@ -371,10 +376,27 @@ export function buildGraphQLSchema(
    * more knowledge of `TermFilter` than it already needs of `terms`.
    */
   const targetFilters = new Map<string, GraphQLInputObjectType>();
-  function targetFilter(typeName: string): GraphQLInputObjectType {
+  /** The joined names of several targets a filter was created for – the
+   *  same name for a declared type is a collision, not a share. */
+  const polymorphicFilterNames = new Set<string>();
+  function targetFilter(
+    typeName: string,
+    polymorphic = false,
+  ): GraphQLInputObjectType {
     const existing = targetFilters.get(typeName);
+    if (
+      existing !== undefined &&
+      polymorphicFilterNames.has(typeName) !== polymorphic
+    ) {
+      throw new Error(
+        `Type “${typeName}” is also the joined name of a lookup’s targets, so both would be filtered through “${existing.name}”; rename one.`,
+      );
+    }
     if (existing !== undefined) {
       return existing;
+    }
+    if (polymorphic) {
+      polymorphicFilterNames.add(typeName);
     }
     const name = `${typeName}Filter`;
     // graphql-js would reject the duplicate too, but only once the whole schema
@@ -428,6 +450,17 @@ export function buildGraphQLSchema(
   // and rejects duplicate names schema-wide.
   const referenceTypes = new Map<string, GraphQLObjectType>();
   /**
+   * The interface a lookup naming several targets is served as, by the
+   * targets’ joined name – a namespace of its own, apart from the object
+   * types above, so an inline Reference Type that happens to be named
+   * `PersonOrOrganization` can never be mistaken for it. Beside each, the
+   * targets behind it.
+   */
+  const interfaceTypes = new Map<string, GraphQLInterfaceType>();
+  const interfaceMembers = new Map<string, readonly string[]>();
+  /** Each interface’s implementation for a referent no collection holds. */
+  const unresolvedTypes: GraphQLObjectType[] = [];
+  /**
    * The lookup targets whose emitted type must carry a NULLABLE `id`: those
    * some field reaches through a {@link ReferenceStrategy.local local} lookup,
    * which stores what a document says about an endpoint whether or not the
@@ -453,12 +486,14 @@ export function buildGraphQLSchema(
       walked.add(searchType.name);
       for (const field of referenceFields(searchType)) {
         if (field.ref?.strategy === 'lookup' && field.ref.local === true) {
-          nullableIdTargets.add(field.ref.target);
+          for (const target of labelSourceNamesOf(field)) {
+            nullableIdTargets.add(target);
+          }
         }
-        const nested =
-          nestedReferenceType(schema, field) ??
-          localLookupTypeOf(field, schema);
-        if (nested !== undefined) {
+        const referenceType = nestedReferenceType(schema, field);
+        for (const nested of referenceType === undefined
+          ? localLookupTargetsOf(field, schema)
+          : [referenceType]) {
           collect(nested);
         }
       }
@@ -498,14 +533,26 @@ export function buildGraphQLSchema(
   const nestedFilters = new Map<string, GraphQLInputObjectType>();
   const referenceFilters = new Map<string, GraphQLInputObjectType>();
 
-  /** The name a reference’s emitted type is keyed under: a `lookup`’s target,
-   *  an `inline`’s reference type, an `idOnly`’s declared name (which names a
-   *  filter’s target, never an object type – an `idOnly` surfaces as its bare
-   *  IRI). */
-  function referencedTypeName(
-    ref: NonNullable<ReferenceField['ref']>,
-  ): string | undefined {
-    return ref.strategy === 'lookup' ? ref.target : ref.typeName;
+  /** The name a reference’s emitted type is keyed under: a `lookup`’s target
+   *  – or its targets joined with `Or` where it names several, the one name
+   *  its interface and its filter share – an `inline`’s reference type, an
+   *  `idOnly`’s declared name (which names a filter’s target, never an object
+   *  type – an `idOnly` surfaces as its bare IRI). */
+  function referencedTypeName(field: ReferenceField): string | undefined {
+    const ref = field.ref;
+    if (ref === undefined) {
+      return undefined;
+    }
+    return ref.strategy === 'lookup'
+      ? polymorphicName(labelSourceNamesOf(field))
+      : ref.typeName;
+  }
+
+  /** The one name several targets share: `PersonOrOrganization`. Derived, in
+   *  declaration order, so two fields naming the same targets meet one type –
+   *  exactly as two lookups on one target share `‹Target›Reference`. */
+  function polymorphicName(targets: readonly string[]): string {
+    return targets.join('Or');
   }
 
   /**
@@ -526,13 +573,156 @@ export function buildGraphQLSchema(
       // as the IRI itself rather than as an object – there is no type to
       // register, and no name needed to register one under.
       field.ref.strategy === 'idOnly' ||
-      referencedTypeName(field.ref) === undefined
+      referencedTypeName(field) === undefined
     ) {
+      return;
+    }
+    // A lookup naming several targets is served as an INTERFACE over the
+    // targets’ own reference types, each registered as it would be for a
+    // lookup naming it alone – so a consumer selecting only what every target
+    // carries (`id`, the label) needs no fragment, and `__typename` says
+    // which target a referent came from.
+    const targets = labelSourceNamesOf(field);
+    if (field.ref.strategy === 'lookup' && targets.length > 1) {
+      for (const target of targets) {
+        registerObjectType(target, field, owner);
+      }
+      registerInterfaceType(targets, field, owner);
       return;
     }
     // Guaranteed by the guard above: idOnly is out, and the other two strategies
     // each name their referent.
-    const typeName = referencedTypeName(field.ref) as string;
+    registerObjectType(referencedTypeName(field) as string, field, owner);
+  }
+
+  /**
+   * The interface a lookup naming several targets is served as: named for the
+   * targets (`PersonOrOrganizationReference`), carrying what every one of them
+   * carries – `id`, and every `output` field they all declare alike – and
+   * resolved per referent to the target whose collection answered for it,
+   * which the port marks on each nested document.
+   *
+   * A referent the port could not type – an IRI no collection holds, or one
+   * whose fetch failed – resolves to a third implementation,
+   * `PersonOrOrganizationUnresolvedReference`, which carries its `id` and
+   * nothing else, rather than to a target it may not be. Every shared field
+   * is therefore nullable on the interface: an implementation may promise
+   * more than its interface, never less, and this one promises only `id`.
+   */
+  function registerInterfaceType(
+    targets: readonly string[],
+    field: SearchField,
+    owner: SearchType,
+  ): void {
+    const typeName = polymorphicName(targets);
+    if (interfaceTypes.has(typeName)) {
+      return;
+    }
+    const graphQLName = `${typeName}Reference`;
+    const unresolvedName = `${typeName}UnresolvedReference`;
+    // The joined name is derived, so a declared type may spell the same
+    // thing – `PersonOrOrganization` as a Reference Type – and its filter
+    // would then share a name with this interface’s. Refused, naming both.
+    if (
+      takenTypeNames.has(graphQLName) ||
+      takenTypeNames.has(unresolvedName) ||
+      takenTypeNames.has(typeName)
+    ) {
+      throw new Error(
+        `Reference type “${typeName}” (field “${field.name}” of “${owner.name}”) would be served as “${graphQLName}”, which collides with another type name; rename one.`,
+      );
+    }
+    takenTypeNames.add(graphQLName);
+    takenTypeNames.add(unresolvedName);
+    // Reserve the joined name too, so a Reference Type spelling it that
+    // registers LATER is refused with the same message.
+    takenTypeNames.add(typeName);
+    const members = targets.map(
+      (target) => rootTypesByName.get(target) as RootType,
+    );
+    const nullableId = members.some((member) =>
+      nullableIdTargets.has(member.name),
+    );
+    interfaceMembers.set(typeName, targets);
+    // One field set for the interface and its unresolved implementation:
+    // what every referent carries, which is all an untyped one can offer.
+    const sharedFields = (): Record<
+      string,
+      GraphQLFieldConfig<Source, SearchContext>
+    > => ({
+      id: {
+        type: nullableId ? iriScalar : new GraphQLNonNull(iriScalar),
+      },
+      ...Object.fromEntries(
+        outputFields(members[0])
+          .map((declared) => sharedField(declared, members))
+          .filter((shared): shared is SearchField => shared !== undefined)
+          .map((shared) => [shared.name, outputFieldConfig(shared)]),
+      ),
+    });
+    const interfaceType = new GraphQLInterfaceType({
+      name: graphQLName,
+      description: `A reference to a ${targets.join(' or a ')}; select \`__typename\` to tell which, and the fields of one through an inline fragment on its type.`,
+      resolveType: (source: Source) => {
+        const resolved = (source as NestedDocument)[NESTED_DOCUMENT_TYPE];
+        // A document the port did not type is one no collection answered
+        // for: claiming any target for it could be false, so it is served as
+        // what it is.
+        return typeof resolved === 'string' && targets.includes(resolved)
+          ? `${resolved}Reference`
+          : unresolvedName;
+      },
+      fields: sharedFields,
+    });
+    interfaceTypes.set(typeName, interfaceType);
+    unresolvedTypes.push(
+      new GraphQLObjectType({
+        name: unresolvedName,
+        description: `A reference to a ${targets.join(' or a ')} that no collection this API serves holds – a dangling IRI, or one whose lookup failed – so only its \`id\` is known.`,
+        interfaces: [interfaceType],
+        fields: sharedFields,
+      }),
+    );
+  }
+
+  /**
+   * A field every member declares alike – same kind, same arity – made
+   * nullable, since an unresolved referent carries none of it. `undefined`
+   * where the members do not all carry it: the interface promises only what
+   * holds of every referent.
+   */
+  function sharedField(
+    declared: SearchField,
+    members: readonly RootType[],
+  ): SearchField | undefined {
+    const counterparts = members.map((member) =>
+      fieldNamed(member, declared.name),
+    );
+    if (
+      counterparts.some(
+        (counterpart) =>
+          counterpart === undefined ||
+          counterpart.output !== true ||
+          counterpart.kind !== declared.kind ||
+          (counterpart.array === true) !== (declared.array === true),
+      )
+    ) {
+      return undefined;
+    }
+    // A shared reference field is served as one emitted type on every
+    // member: `searchSchema` holds the targets to the same strategy and the
+    // same referent for a name they share, so nothing is checked here.
+    return { ...declared, required: false } as SearchField;
+  }
+
+  /** Register the object type one referenced shape is served as, under
+   *  `typeName`: a lookup’s target root type, or an inline reference’s
+   *  Reference Type. */
+  function registerObjectType(
+    typeName: string,
+    field: ReferenceField,
+    owner: SearchType,
+  ): void {
     if (referenceTypes.has(typeName)) {
       // Fields sharing a referent share one emitted type, and cannot disagree
       // about its FIELDS: a lookup's come from the target that names the type,
@@ -557,10 +747,17 @@ export function buildGraphQLSchema(
     // searchSchema rejects a lookup whose target it cannot find, and an inline
     // reference that resolves to no Reference Type.
     const nested = (
-      field.ref.strategy === 'lookup'
-        ? rootTypesByName.get(field.ref.target)
+      field.ref?.strategy === 'lookup'
+        ? rootTypesByName.get(typeName)
         : nestedReferenceType(schema, field)
     ) as SearchType;
+    // Every interface this type will implement: one per lookup naming this
+    // target among several. Resolved lazily, so registration order between
+    // the interface and its members does not matter.
+    const implemented = (): GraphQLInterfaceType[] =>
+      [...interfaceMembers]
+        .filter(([, members]) => members.includes(typeName))
+        .map(([key]) => interfaceTypes.get(key) as GraphQLInterfaceType);
     // An inline entry carries no `id`, so its output fields are all a client
     // can select; GraphQL refuses an object type with none.
     if (nested.class === undefined && outputFields(nested).length === 0) {
@@ -572,6 +769,7 @@ export function buildGraphQLSchema(
       typeName,
       new GraphQLObjectType({
         name: graphQLName,
+        interfaces: implemented,
         // A thunk, so a Reference Type nesting another one resolves whatever
         // the registration order is (the graph is acyclic by searchSchema).
         fields: (): Record<
@@ -681,10 +879,13 @@ export function buildGraphQLSchema(
                 resolve: (source) => iriOf(source[field.name]) ?? null,
               };
         }
-        const referenceType = referenceTypes.get(
-          (field.ref === undefined
-            ? undefined
-            : referencedTypeName(field.ref)) ?? '',
+        const typeName = referencedTypeName(field) ?? '';
+        // A lookup naming several targets is served as their interface.
+        const referenceType = (
+          field.ref?.strategy === 'lookup' &&
+          labelSourceNamesOf(field).length > 1
+            ? interfaceTypes.get(typeName)
+            : referenceTypes.get(typeName)
         )!;
         return field.array === true
           ? {
@@ -763,14 +964,14 @@ export function buildGraphQLSchema(
     if (existing !== undefined) {
       return existing;
     }
-    const identityTarget = labelTargetNameOf(field, schema);
+    const identityTargets = labelTargetNamesOf(field, schema);
     const nestedWhere = nestedWhereInputFor(referenceType);
     const created = new GraphQLInputObjectType({
       name: `${referenceType.name}Filter`,
       description: `A condition on ${referenceType.name}: the ids its entries reference, or a condition on one entry.`,
       isOneOf: true,
       fields: () => ({
-        ...(identityTarget !== undefined && {
+        ...(identityTargets.length > 0 && {
           in: { type: new GraphQLList(new GraphQLNonNull(iriScalar)) },
         }),
         where: { type: nestedWhere },
@@ -818,10 +1019,19 @@ export function buildGraphQLSchema(
           return keywordFilter;
         }
         // A lookup keys on its `target`, an idOnly/inline on its `typeName`:
-        // one reading, so a filter is typed by whatever names the referent.
-        const target =
-          field.ref === undefined ? undefined : referencedTypeName(field.ref);
-        return target === undefined ? iriFilter : targetFilter(target);
+        // one reading, so a filter is typed by whatever names the referent. A
+        // lookup naming several targets keys on all of them, so its filter
+        // is named for the set (`PersonOrOrganizationFilter`): truthful, and
+        // still an `IRI` list, so coarse discovery finds it – refined
+        // discovery, which resolves through one target’s own `id`, does not.
+        const target = referencedTypeName(field);
+        return target === undefined
+          ? iriFilter
+          : targetFilter(
+              target,
+              field.ref?.strategy === 'lookup' &&
+                labelSourceNamesOf(field).length > 1,
+            );
       }
       case 'range':
         return field.kind === 'integer'
@@ -1179,6 +1389,14 @@ export function buildGraphQLSchema(
 
   return new GraphQLSchema({
     query: new GraphQLObjectType({ name: 'Query', fields: queryFields }),
+    // An interface's implementations are reachable only through it, so they
+    // are listed explicitly; every other reference type is reachable already
+    // and listing it twice is harmless.
+    types: [
+      ...referenceTypes.values(),
+      ...interfaceTypes.values(),
+      ...unresolvedTypes,
+    ],
   });
 }
 
