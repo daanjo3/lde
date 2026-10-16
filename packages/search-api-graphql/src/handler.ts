@@ -89,8 +89,9 @@ export interface SearchGraphQLHandlerOptions {
 /**
  * The served search API: one `fetch` handler covering POST execution, the GET
  * playground, introspection, CORS, depth/cost limits, `Accept-Language`
- * parsing, and the SDL (`GET <endpoint>?sdl` – the schema contract without a
- * running introspection query).
+ * parsing (answered with `Vary: Accept-Language` and a `Content-Language`
+ * listing every language served), and the SDL (`GET <endpoint>?sdl` – the
+ * schema contract without a running introspection query).
  */
 export function createSearchGraphQLHandler(
   options: SearchGraphQLHandlerOptions,
@@ -103,7 +104,7 @@ export function createSearchGraphQLHandler(
     buildGraphQLSchema(options.searchSchema!, options.schemaOptions);
   const graphqlEndpoint = options.graphqlEndpoint ?? '/graphql';
 
-  const yoga = createYoga({
+  const yoga = createYoga<{ servedLanguages: Set<string> }>({
     schema,
     graphqlEndpoint,
     // Build responses with the runtime’s own Fetch classes, so the handler’s
@@ -130,11 +131,12 @@ export function createSearchGraphQLHandler(
         flattenFragments: true,
       }),
     ],
-    context: ({ request }): SearchContext => ({
+    context: ({ request, servedLanguages }): SearchContext => ({
       engine: options.engine,
       acceptLanguage: parseAcceptLanguage(
         request.headers.get('accept-language'),
       ),
+      servedLanguages,
       onFacetError: options.onFacetError,
     }),
   });
@@ -151,8 +153,53 @@ export function createSearchGraphQLHandler(
         headers: { 'content-type': 'application/graphql; charset=utf-8' },
       });
     }
-    return await yoga.fetch(request, {});
+    const servedLanguages = new Set<string>();
+    const response = await yoga.fetch(request, { servedLanguages });
+    // Results differ per Accept-Language (output order, search and sort
+    // locale), so a shared cache must key on it.
+    response.headers.append('vary', 'Accept-Language');
+    const contentLanguage = toContentLanguage(servedLanguages);
+    if (contentLanguage !== undefined) {
+      response.headers.set('content-language', contentLanguage);
+    }
+    return response;
   };
+}
+
+/**
+ * A `Content-Language` value for the served languages: tags come from indexed
+ * data, so drop any that is not a well-formed language tag (it could make an
+ * invalid header) or is untagged in another case (`UND`), and fold case-only
+ * duplicates. Tags keep the spelling the body serves them in, so the header
+ * names the same languages as `LanguageString.language`.
+ */
+function toContentLanguage(
+  servedLanguages: ReadonlySet<string>,
+): string | undefined {
+  const tagsByLowerCase = new Map<string, string>();
+  for (const language of servedLanguages) {
+    const lowerCase = language.toLowerCase();
+    if (
+      lowerCase !== 'und' &&
+      !tagsByLowerCase.has(lowerCase) &&
+      isLanguageTag(language)
+    ) {
+      tagsByLowerCase.set(lowerCase, language);
+    }
+  }
+  return tagsByLowerCase.size > 0
+    ? [...tagsByLowerCase.values()].join(', ')
+    : undefined;
+}
+
+/** Whether a string is a well-formed BCP 47 language tag. */
+function isLanguageTag(language: string): boolean {
+  try {
+    Intl.getCanonicalLocales(language);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Ordered languages from an `Accept-Language` header (best first, by q-value). */
