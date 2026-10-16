@@ -114,11 +114,17 @@ fails this – accepts. The endpoint path defaults to `/graphql`
 - **Depth and cost limits** ([graphql-armor](https://escape.tech/graphql-armor/);
   `maxDepth`, default 15, and `maxCost`, default 5000) guard the public
   endpoint against arbitrarily expensive queries; introspection stays exempt.
-  Fragments are flattened, so a fragment spread adds no depth and no longer
-  multiplies the cost of what it contains. Each spread still adds a small cost,
-  more at deeper levels, and every repeat of a reused fragment costs 1.5× the
-  fragment: a query with many fragments scores somewhat higher than its
-  inlined form.
+  Fragments are flattened, so a fragment adds no depth and, nested in a
+  field, no longer multiplies the cost of what it contains: it adds a fixed
+  cost instead – 2 for an inline fragment, 3 for a named spread – scaled like
+  any field by the levels above it. Two cases still cost more than the inlined
+  form. A named spread directly at the operation root (`{ ...Q }`) costs its
+  contents 1.5×. And every repeat of a named fragment costs 1 plus 1.5× what
+  its first spread scored, even in another operation of the same document.
+  The cost limit bounds a query’s shape, not how many results it fetches:
+  `perPage` does not enter the cost, so a page of 100 scores like a page of 1.
+  What bounds result volume is `maxPerPage` (a `buildGraphQLSchema` option,
+  default 100), which rejects any larger `perPage`.
 
 To serve **custom fields next to the generated search API**, merge your own
 schema with `buildGraphQLSchema()`’s output (e.g. `@graphql-tools/schema`’s
