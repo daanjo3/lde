@@ -1,3 +1,9 @@
+## 0.30.3 (2026-10-16)
+
+### 🩹 Fixes
+
+- **search-api-graphql:** send Vary and Content-Language for Accept-Language ([#917](https://github.com/ldelements/lde/pull/917))
+
 ## 0.30.2 (2026-10-16)
 
 ### 🩹 Fixes
