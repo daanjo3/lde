@@ -118,8 +118,13 @@ export function createSearchGraphQLHandler(
     renderGraphiQL: options.renderPlayground ?? renderGraphiQL,
     cors: options.cors,
     plugins: [
-      maxDepthPlugin({ n: options.maxDepth ?? 15 }),
-      costLimitPlugin({ maxCost: options.maxCost ?? 5000 }),
+      // Flatten fragments so a fragment spread doesn’t count as an extra level,
+      // which multiplies the cost per fragment. A small cost per spread remains.
+      maxDepthPlugin({ n: options.maxDepth ?? 15, flattenFragments: true }),
+      costLimitPlugin({
+        maxCost: options.maxCost ?? 5000,
+        flattenFragments: true,
+      }),
     ],
     context: ({ request }): SearchContext => ({
       engine: options.engine,
