@@ -1,3 +1,75 @@
+## 0.34.0 (2026-10-16)
+
+### 🚀 Features
+
+- ⚠️  **search:** resolve a reference across several targets ([#848](https://github.com/ldelements/lde/pull/848))
+
+### ⚠️  Breaking Changes
+
+- **search:** resolve a reference across several targets  ([#848](https://github.com/ldelements/lde/pull/848))
+  labelSourceNameOf, labelTargetNameOf, localLookupTypeOf
+  and inheritedFacetKeys are replaced by labelSourceNamesOf,
+  labelTargetNamesOf, localLookupTargetsOf and inheritedFacetPolicies,
+  which return lists (or a map) rather than a single value; _target is a
+  reserved field name.
+  * test(search): cover the polymorphic lookup where CI found it bare
+  - Drop the GraphQL fixture that named one field at two referents: the
+    schema now rejects that pairing, so the interface builder no longer
+    re-checks it and the branch threshold is re-anchored.
+  - Cover a single-target lookup skipping an id-only selection, an empty
+    stored referent field, a single-valued polymorphic nesting and a
+    cut descent that still declares its discriminator.
+  * test(search-typesense): reach the edge with no endpoint through the local lookup
+  The empty-endpoint case is read one level in, by the stored lookup,
+  not by the inline entry above it – so the test states an edge without
+  a creator rather than a work without edges.
+  * fix(search): close review gaps in lookups over several targets
+  - Rebuild an unanswered stored referent against its target’s levels, so its lookups nest
+  - Ask each target’s collection only for the lookup fields that target declares
+  - Reject an empty target or labelSource list with a new empty-target issue
+  - Refuse a type whose filter name collides with a multi-target lookup’s, output or not
+  - Read rdf:type and key hops as UNION branches of one OPTIONAL, so no row cross product
+  - Stop tracking a generated coverage summary and ignore coverage directories everywhere
+  - Drop a stale coverage-threshold comment and a duplicated GraphQL test
+  * fix(search-api-graphql): serve an untyped referent as an unresolved reference
+  - Resolve a referent no collection holds to ‹Set›UnresolvedReference, not the first target
+  - Make every interface field nullable, since the unresolved type carries only its id
+  - Record the choice, and why dropping the referent was rejected, in ADR 28
+  * test(search-api-graphql): cover the nullable id of a local lookup over several targets"
+  M	.gitignore
+  A	docs/decisions/0028-resolve-a-reference-across-several-targets.md
+  M	docs/reference/search-api-graphql.md
+  M	docs/reference/search-pipeline.md
+  M	docs/reference/search-typesense.md
+  M	docs/reference/search.md
+  M	packages/search-api-graphql/src/build-schema.ts
+  M	packages/search-api-graphql/src/projection.ts
+  A	packages/search-api-graphql/test/polymorphic-lookup.test.ts
+  M	packages/search-pipeline/src/extraction.ts
+  M	packages/search-pipeline/test/extraction.test.ts
+  A	packages/search-pipeline/test/polymorphic-extraction.test.ts
+  M	packages/search-typesense/src/collection-definition.ts
+  M	packages/search-typesense/src/lookup.ts
+  M	packages/search-typesense/src/query-compiler.ts
+  M	packages/search-typesense/src/search.ts
+  A	packages/search-typesense/test/polymorphic-lookup.test.ts
+  M	packages/search-typesense/test/qualified-relation.test.ts
+  M	packages/search/src/adapter.ts
+  M	packages/search/src/engine.ts
+  M	packages/search/src/index.ts
+  M	packages/search/src/join-graph.ts
+  M	packages/search/src/project.ts
+  M	packages/search/src/query.ts
+  M	packages/search/src/schema.ts
+  M	packages/search/src/testing.ts
+  A	packages/search/test/polymorphic-lookup.test.ts
+  M	packages/search/test/qualified-relation.test.ts
+  M	packages/search/test/schema.test.ts
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/search to 0.29.0
+
 ## 0.33.1 (2026-10-16)
 
 ### 🩹 Fixes
