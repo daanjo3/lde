@@ -1,3 +1,24 @@
+## 0.33.0 (2026-10-22)
+
+### 🩹 Fixes
+
+- ⚠️  **search-api-graphql:** treat und as untagged and leave nulled values out of Content-Language ([#929](https://github.com/ldelements/lde/pull/929))
+
+### ⚠️  Breaking Changes
+
+- **search-api-graphql:** treat und as untagged and leave nulled values out of Content-Language  ([#929](https://github.com/ldelements/lde/pull/929))
+  SearchContext.servedLanguages is now a Map<string, string>
+  keyed by response path instead of a Set<string>. A custom transport passes
+  new Map() and reads its values()."
+  M	docs/reference/search-api-graphql.md
+  M	packages/search-api-graphql/src/build-schema.ts
+  M	packages/search-api-graphql/src/handler.ts
+  M	packages/search-api-graphql/src/language.ts
+  M	packages/search-api-graphql/test/build-schema.test.ts
+  M	packages/search-api-graphql/test/handler.test.ts
+  M	packages/search-api-graphql/test/language.test.ts
+  M	packages/search-api-graphql/vite.config.ts
+
 ## 0.32.0 (2026-10-22)
 
 ### 🚀 Features
