@@ -1,3 +1,24 @@
+## 0.32.0 (2026-10-22)
+
+### 🚀 Features
+
+- ⚠️  **search-api-graphql:** cap the root fields one operation may select ([#928](https://github.com/ldelements/lde/pull/928))
+
+### ⚠️  Breaking Changes
+
+- **search-api-graphql:** cap the root fields one operation may select  ([#928](https://github.com/ldelements/lde/pull/928))
+  an operation selecting more than 10 root fields is now rejected.
+  Raise maxSearches (MAX_SEARCHES on the server) if a client needs more."
+  M	docs/reference/search-api-graphql.md
+  M	docs/reference/search-api-server.md
+  M	packages/search-api-graphql/src/handler.ts
+  A	packages/search-api-graphql/src/max-searches.ts
+  M	packages/search-api-graphql/test/handler.test.ts
+  M	packages/search-api-graphql/vite.config.ts
+  M	packages/search-api-server/src/config.ts
+  M	packages/search-api-server/src/server.ts
+  M	packages/search-api-server/test/config.test.ts
+
 ## 0.31.1 (2026-10-22)
 
 ### 🩹 Fixes
