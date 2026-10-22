@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { DataFactory } from 'n3';
 import { Parser } from '@traqula/parser-sparql-1-1';
+import { Generator } from '@traqula/generator-sparql-1-1';
 import type {
   Pattern,
   QueryConstruct,
@@ -9,12 +10,14 @@ import type {
 import {
   findSubSelect,
   injectValues,
+  injectValuesOuter,
   mergeBindings,
 } from '../../src/sparql/values.js';
 import type { VariableBindings } from '../../src/sparql/reader.js';
 
 const { namedNode, literal } = DataFactory;
 const parser = new Parser();
+const generator = new Generator();
 
 function parseConstruct(sparql: string): QueryConstruct {
   return parser.parse(sparql) as QueryConstruct;
@@ -200,8 +203,15 @@ describe('injectValues', () => {
     expect(subSelectAfter.where.patterns.length).toBe(originalInnerLength);
   });
 
-  it('injects a plain string literal binding', () => {
-    const result = injectValues(baseQuery, [{ class: literal('nl') }]);
+  it.each([
+    ['plain', literal('nl'), { value: 'nl' }],
+    [
+      'language-tagged',
+      literal('Naam', 'nl'),
+      { value: 'Naam', langOrIri: 'nl' },
+    ],
+  ])('injects a %s literal binding', (_kind, term, expected) => {
+    const result = injectValues(baseQuery, [{ class: term }]);
 
     const values = result.where.patterns.find(
       (p): p is PatternValues => p.subType === 'values',
@@ -209,47 +219,64 @@ describe('injectValues', () => {
     expect(values!.values[0]['class']).toMatchObject({
       type: 'term',
       subType: 'literal',
-      value: 'nl',
-    });
-  });
-
-  it('injects a language-tagged literal binding', () => {
-    const result = injectValues(baseQuery, [{ class: literal('Naam', 'nl') }]);
-
-    const values = result.where.patterns.find(
-      (p): p is PatternValues => p.subType === 'values',
-    );
-    expect(values!.values[0]['class']).toMatchObject({
-      type: 'term',
-      subType: 'literal',
-      value: 'Naam',
-      langOrIri: 'nl',
+      ...expected,
     });
   });
 });
 
+describe('injectValuesOuter', () => {
+  const datasetBindings = [
+    { dataset: namedNode('http://example.org/dataset') },
+  ];
+
+  it('generates valid SPARQL when the WHERE clause is a bare sub-SELECT', () => {
+    const query = parseConstruct(
+      'CONSTRUCT { ?dataset <http://example.org/count> ?count } WHERE { SELECT (COUNT(*) AS ?count) { ?s ?p ?o } }',
+    );
+
+    const generated = generator.generate(
+      injectValuesOuter(query, datasetBindings),
+    );
+
+    expect(() => parser.parse(generated)).not.toThrow();
+  });
+
+  it('injects at the outer scope, not into a nested sub-SELECT', () => {
+    const query = parseConstruct(
+      'CONSTRUCT { ?dataset <http://example.org/p> ?partition } WHERE { { SELECT ?class { ?s a ?class } } BIND(IRI(CONCAT(STR(?dataset), STR(?class))) AS ?partition) }',
+    );
+
+    const result = injectValuesOuter(query, datasetBindings);
+
+    expect(hasValues(result.where.patterns)).toBe(true);
+    expect(
+      hasValues(findSubSelect(result.where.patterns)!.where.patterns),
+    ).toBe(false);
+  });
+});
+
 describe('mergeBindings', () => {
-  it('returns the item-level rows unchanged when dataset-level is empty', () => {
-    const itemLevel = [{ s: namedNode('http://example.org/1') }];
-    expect(mergeBindings([], itemLevel)).toBe(itemLevel);
+  it('returns b unchanged when a is empty', () => {
+    const b = [{ s: namedNode('http://example.org/1') }];
+    expect(mergeBindings([], b)).toBe(b);
   });
 
-  it('returns the dataset-level rows unchanged when item-level is empty', () => {
-    const datasetLevel = [{ dataset: namedNode('http://example.org/dataset') }];
-    expect(mergeBindings(datasetLevel, [])).toBe(datasetLevel);
+  it('returns a unchanged when b is empty', () => {
+    const a = [{ dataset: namedNode('http://example.org/dataset') }];
+    expect(mergeBindings(a, [])).toBe(a);
   });
 
-  it('cross-products dataset-level and item-level rows', () => {
-    const datasetLevel: VariableBindings[] = [
+  it('cross-products the rows of a and b', () => {
+    const a: VariableBindings[] = [
       { dataset: namedNode('http://example.org/dataset') },
       { dataset: namedNode('http://example.org/dataset'), lang: literal('en') },
     ];
-    const itemLevel: VariableBindings[] = [
+    const b: VariableBindings[] = [
       { s: namedNode('http://example.org/1') },
       { s: namedNode('http://example.org/2') },
     ];
 
-    const result = mergeBindings(datasetLevel, itemLevel);
+    const result = mergeBindings(a, b);
 
     expect(result).toHaveLength(4);
     for (const row of result) {
