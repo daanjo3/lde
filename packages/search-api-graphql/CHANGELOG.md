@@ -1,3 +1,9 @@
+## 0.31.1 (2026-10-22)
+
+### 🩹 Fixes
+
+- **search-api-graphql:** name a lookup’s targets without an article ([#926](https://github.com/ldelements/lde/pull/926))
+
 ## 0.31.0 (2026-10-16)
 
 ### 🚀 Features
