@@ -1,3 +1,9 @@
+## 0.18.1 (2026-10-23)
+
+### 🚀 Features
+
+- **sparql-qlever:** add the construct-deduplication server option ([#930](https://github.com/ldelements/lde/pull/930))
+
 ## 0.18.0 (2026-10-16)
 
 ### 🧱 Updated Dependencies

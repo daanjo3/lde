@@ -1,3 +1,9 @@
+## 0.22.1 (2026-10-23)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/sparql-qlever to 0.18.1
+
 ## 0.22.0 (2026-10-16)
 
 ### 🧱 Updated Dependencies
