@@ -2,7 +2,7 @@ import type { Client } from 'typesense';
 import type { SearchParams } from 'typesense/lib/Typesense/Documents.js';
 import {
   NESTED_DOCUMENT_TYPE,
-  type FacetBucket,
+  type Facet,
   type FacetsOutcome,
   type LocalizedValue,
   type NestedDocument,
@@ -28,7 +28,7 @@ import {
   facetableFields,
   fieldNamed,
   isInlineReference,
-  isRangeFacet,
+  isBinnedRangeFacet,
   isUnsatisfiable,
   joinGraph,
   labelFieldOf,
@@ -880,6 +880,12 @@ export interface TypesenseSearchResponse {
       readonly value: string;
       readonly count: number;
     }[];
+    /** A numeric facet’s value statistics over the matching documents, binned
+     *  or not and whatever the bucket cap; `min`/`max` are absent when none
+     *  holds a value. (Its `sum` and `avg` overflow on large values; unused.) */
+    readonly stats?:
+      | { readonly min: number; readonly max: number }
+      | { readonly min?: never; readonly max?: never };
   }[];
 }
 
@@ -923,20 +929,21 @@ export function parseSearchResponse(
       .filter((field) => labelTargetNamesOf(field, schema).length > 0)
       .map((field) => field.name),
   );
-  const facets: Record<string, FacetBucket[]> = {};
+  const facets: Record<string, Facet> = {};
   for (const facet of response.facet_counts ?? []) {
     const labelled = referenceFacets.has(facet.field_name);
-    // A range facet echoes the declared range key as the bucket value; look the
-    // bin's half-open bounds back up by key so the bucket is self-describing.
+    // A binned facet echoes the declared range key as the bucket value; look
+    // the bin’s half-open bounds back up by key so the bucket is
+    // self-describing.
     const field = fieldNamed(searchType, facet.field_name);
     const rangesByKey =
-      field !== undefined && isRangeFacet(field)
+      field !== undefined && isBinnedRangeFacet(field)
         ? new Map(field.facetRanges.map((range) => [range.key, range]))
         : undefined;
     // A boolean facet is reported with the values stringified; recover the
     // boolean so the bucket carries the term the `is` filter expects.
     const booleanFacet = field?.kind === 'boolean';
-    facets[facet.field_name] = facet.counts.map((bucket) => {
+    const buckets = facet.counts.map((bucket) => {
       const label = labelled ? labels.get(bucket.value) : undefined;
       const range = rangesByKey?.get(bucket.value);
       return {
@@ -948,6 +955,12 @@ export function parseSearchResponse(
         ...(booleanFacet ? { is: bucket.value === 'true' } : {}),
       };
     });
+    // Only a numeric facet’s stats carry a min and max.
+    const stats = facet.stats;
+    facets[facet.field_name] =
+      stats?.min === undefined
+        ? { buckets }
+        : { buckets, extent: { min: stats.min, max: stats.max } };
   }
   return { hits, total: response.found, facets };
 }

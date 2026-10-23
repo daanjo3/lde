@@ -179,6 +179,27 @@ describe('buildCollectionDefinition', () => {
     });
   });
 
+  it('indexes a field declaring bins for sorting, which Typesense needs to bin it', () => {
+    const binned = buildCollectionDefinition(
+      {
+        name: 'Doc',
+        class: 'urn:example:Doc',
+        fields: [
+          {
+            name: 'triples',
+            kind: 'integer',
+            facetable: true,
+            facetRanges: [{ key: 'small', max: 100 }],
+          },
+        ],
+      },
+      { collectionNameFor: () => 'docs', defaultLocale: 'en' },
+    );
+    expect(binned.fields).toContainEqual(
+      expect.objectContaining({ name: 'triples', facet: true, sort: true }),
+    );
+  });
+
   it('emits a folded, stemmed search companion for a searchable keyword field', () => {
     expect(collection.fields).toContainEqual({
       name: 'keyword_search',

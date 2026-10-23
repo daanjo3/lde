@@ -20,7 +20,7 @@ import {
   ID_FIELD,
   isoToUnixSeconds,
   isInternalField,
-  isRangeFacet,
+  isBinnedRangeFacet,
   isWelded,
   joinGraph,
   localLookupTargetsOf,
@@ -154,11 +154,13 @@ export function buildSearchParams(
 /**
  * The `facet_by` clause. A facet on a numeric field that declares
  * {@link SearchField.facetRanges} faceted into those fixed half-open `[min, max)`
- * bins (a histogram); every other facet is a plain per-value facet on the
+ * bins; every other facet is a plain per-value facet on the
  * field the declaration facets ({@link physicalFields} – the field itself, or
  * the `${name}_facet` companion of a reference inheriting a facet policy).
  * Typesense range syntax is already start-inclusive/end-exclusive, so the
- * declared bounds pass straight through with no boundary fix-up.
+ * declared bounds pass straight through with no boundary fix-up. A numeric
+ * facet, binned or not, comes back with `stats` over every matching value,
+ * which carry its extent.
  */
 function compileFacetBy(
   facets: readonly string[],
@@ -171,7 +173,7 @@ function compileFacetBy(
       if (field === undefined) {
         return name;
       }
-      return isRangeFacet(field)
+      return isBinnedRangeFacet(field)
         ? compileRangeFacet(field.name, field.facetRanges)
         : (physicalFields(field, schema).facet ?? name);
     })
