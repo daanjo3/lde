@@ -610,7 +610,7 @@ describe('Pipeline', () => {
       expect(reporter.datasetSkipped).toHaveBeenCalledWith(
         expect.objectContaining({
           dataset,
-          level: 'warn',
+          defaultLevel: 'warn',
           reason: {
             code: 'noDistributionAvailable',
             message: 'No SPARQL endpoint',
@@ -1465,7 +1465,7 @@ describe('Pipeline', () => {
       const [first] = reporter.events;
       expect(first).toMatchObject({
         type: 'pipelineStart',
-        level: 'info',
+        defaultLevel: 'info',
         timestamp: expect.any(Date),
         runId: expect.any(String),
       });
@@ -1473,7 +1473,7 @@ describe('Pipeline', () => {
         expect(event.runId).toBe(first.runId);
       }
       expect(reporter.stageStart).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'debug' }),
+        expect.objectContaining({ defaultLevel: 'debug' }),
       );
     });
 
@@ -1551,7 +1551,7 @@ describe('Pipeline', () => {
       expect(reporter.stageFailed).toHaveBeenCalledWith(
         expect.objectContaining({
           stage: 'failing',
-          level: 'error',
+          defaultLevel: 'error',
           error: expect.any(Error),
         }),
       );
@@ -1579,7 +1579,7 @@ describe('Pipeline', () => {
       expect(reporter.stageFailed).toHaveBeenCalledWith(
         expect.objectContaining({
           stage: 'failing',
-          level: 'error',
+          defaultLevel: 'error',
           error: expect.any(Error),
         }),
       );
@@ -1616,7 +1616,7 @@ describe('Pipeline', () => {
       expect(reporter.stageFailed).toHaveBeenCalledWith(
         expect.objectContaining({
           stage: 'chained',
-          level: 'error',
+          defaultLevel: 'error',
           error: expect.any(Error),
         }),
       );
@@ -1750,7 +1750,7 @@ describe('Pipeline', () => {
       expect(reporter.stageFailed).toHaveBeenCalledWith(
         expect.objectContaining({
           stage: 'aggregate',
-          level: 'error',
+          defaultLevel: 'error',
           error: expect.any(Error),
         }),
       );
@@ -1855,7 +1855,7 @@ describe('Pipeline', () => {
         expect.objectContaining({
           dataset,
           distribution: dumpDistribution,
-          level: 'warn',
+          defaultLevel: 'warn',
           error: expect.objectContaining({ message: 'Parse error' }),
         }),
       );
@@ -1957,7 +1957,7 @@ describe('Pipeline', () => {
       expect(reporter.stageFailed).toHaveBeenCalledWith(
         expect.objectContaining({
           stage: 'reactive-dump-fallback',
-          level: 'error',
+          defaultLevel: 'error',
           error: expect.any(Error),
         }),
       );
@@ -2632,10 +2632,18 @@ describe('Pipeline', () => {
       await pipeline.run();
 
       expect(reporter.timeoutTightened).toHaveBeenCalledWith(
-        expect.objectContaining({ dataset, level: 'warn', ...tightenEvent }),
+        expect.objectContaining({
+          dataset,
+          defaultLevel: 'warn',
+          ...tightenEvent,
+        }),
       );
       expect(reporter.timeoutRelaxed).toHaveBeenCalledWith(
-        expect.objectContaining({ dataset, level: 'info', ...relaxEvent }),
+        expect.objectContaining({
+          dataset,
+          defaultLevel: 'info',
+          ...relaxEvent,
+        }),
       );
     });
   });
@@ -2745,7 +2753,7 @@ describe('Pipeline', () => {
       expect(reporter.datasetSkipped).toHaveBeenCalledWith(
         expect.objectContaining({
           dataset,
-          level: 'info',
+          defaultLevel: 'info',
           reason: { code: 'unchanged', message: 'Unchanged since last run' },
         }),
       );
@@ -3002,7 +3010,7 @@ describe('Pipeline', () => {
       expect(reporter.distributionValidated).toHaveBeenCalledWith(
         expect.objectContaining({
           distribution: ttl,
-          level: 'warn',
+          defaultLevel: 'warn',
           verdict: {
             valid: false,
             reason: 'parse-error',
