@@ -1,3 +1,61 @@
+## 0.36.0 (2026-10-23)
+
+### 🚀 Features
+
+- ⚠️  **search:** report a range facet’s extent, over the collection and within the other filters ([#945](https://github.com/ldelements/lde/pull/945))
+
+### ⚠️  Breaking Changes
+
+- **search:** report a range facet’s extent, over the collection and within the other filters  ([#945](https://github.com/ldelements/lde/pull/945))
+  FacetMap values are Facet objects – read facet.buckets.
+  A facetable integer, number or date field no longer returns per-value buckets;
+  declare facetRanges for a histogram. In GraphQL a numeric facet is an object:
+  select size { buckets { min max count } } instead of size { min max count },
+  and all { min max } or matching { min max } for its extent. A collection whose
+  type has a facetable, non-sortable numeric field changes definition: rebuild it.
+  * feat(search)!: keep a numeric facet’s per-value buckets beside its extent
+  - An unbinned numeric facet buckets per distinct value again; Typesense reports
+    its stats either way, so the open extent-only bin is gone
+  - Add isBinnedRangeFacet for a field with bins; isRangeFacet holds for every
+    numeric field
+  - Index only a binned field for sorting, which Typesense needs to bin it
+  - Rename the GraphQL ‹Kind›HistogramFacet to ‹Kind›BinnedRangeFacet and give
+    ‹Kind›RangeFacet per-value buckets, a date’s in ISO 8601
+  - Report a facet that fails in both scopes once
+  BREAKING CHANGE: isRangeFacet now holds for every numeric field; use
+  isBinnedRangeFacet for its old meaning. In GraphQL, ‹Kind›HistogramFacet is
+  ‹Kind›BinnedRangeFacet, and a date facet’s per-value bucket value is ISO 8601."
+  M	docs/reference/search-api-graphql.md
+  M	docs/reference/search-typesense.md
+  M	docs/reference/search.md
+  M	packages/search-api-graphql/src/build-schema.ts
+  M	packages/search-api-graphql/src/facet-batch.ts
+  M	packages/search-api-graphql/test/build-schema.test.ts
+  M	packages/search-api-graphql/test/facet-batch.test.ts
+  M	packages/search-api-graphql/vite.config.ts
+  M	packages/search-typesense/src/collection-definition.ts
+  M	packages/search-typesense/src/query-compiler.ts
+  M	packages/search-typesense/src/search.ts
+  M	packages/search-typesense/test/collection-definition.test.ts
+  M	packages/search-typesense/test/facet-policy.test.ts
+  M	packages/search-typesense/test/label-sources.test.ts
+  M	packages/search-typesense/test/parse-response.test.ts
+  M	packages/search-typesense/test/polymorphic-lookup.test.ts
+  M	packages/search-typesense/test/search-engine.test.ts
+  M	packages/search-typesense/vite.config.ts
+  M	packages/search/src/adapter.ts
+  M	packages/search/src/engine.ts
+  M	packages/search/src/index.ts
+  M	packages/search/src/schema.ts
+  M	packages/search/src/testing.ts
+  M	packages/search/test/engine.test.ts
+  M	packages/search/test/schema.test.ts
+  M	packages/search/vite.config.ts
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/search to 0.30.0
+
 ## 0.35.0 (2026-10-16)
 
 ### 🧱 Updated Dependencies
