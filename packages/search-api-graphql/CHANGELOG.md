@@ -1,3 +1,50 @@
+## 0.35.0 (2026-10-25)
+
+### 🚀 Features
+
+- ⚠️  **search:** count a facet without its own filter in the engine, keeping its selection ([#932](https://github.com/ldelements/lde/pull/932))
+
+### ⚠️  Breaking Changes
+
+- **search:** count a facet without its own filter in the engine, keeping its selection  ([#932](https://github.com/ldelements/lde/pull/932))
+  a SearchEngine must count each facet without its own where clause and
+  report the values that clause selects, so search() with facets and filters returns different
+  buckets than before.
+  * docs(search): rewrite the skip-own-filter decision record for readers new to it
+  * docs(search): state that search() fails as a whole, and why that is accepted
+  * fix(search): merge a counted selected value among its facet’s buckets by count
+  - Sort a value counted outside a policy-narrowed facet among the engine’s buckets
+  - Count selected values through the same chunked multi_search as every other search
+  - Leave facet-only paging to searchFacets instead of stripping it in the GraphQL loader
+  - Correct the docs that promised a single multi_search request
+  - Move the private ownership helpers below the module’s exports"
+  M	docs/decisions/0004-search-api-graphql-surface.md
+  M	docs/decisions/0005-batch-facet-queries-through-the-engine-port.md
+  A	docs/decisions/0029-make-skip-own-filter-what-a-facet-means.md
+  M	docs/reference/search-api-graphql.md
+  M	docs/reference/search-typesense.md
+  M	docs/reference/search.md
+  M	packages/search-api-graphql/src/build-schema.ts
+  M	packages/search-api-graphql/src/facet-batch.ts
+  M	packages/search-api-graphql/test/build-schema.test.ts
+  M	packages/search-api-graphql/test/facet-batch.test.ts
+  M	packages/search-api-graphql/vite.config.ts
+  M	packages/search-typesense/src/search.ts
+  M	packages/search-typesense/test/facet-policy.test.ts
+  M	packages/search-typesense/test/search-engine.test.ts
+  A	packages/search-typesense/test/skip-own-filter.test.ts
+  M	packages/search-typesense/vite.config.ts
+  M	packages/search/src/adapter.ts
+  M	packages/search/src/engine.ts
+  M	packages/search/src/query.ts
+  M	packages/search/src/testing.ts
+  A	packages/search/test/facet-searches.test.ts
+  M	packages/search/vite.config.ts
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/search to 0.31.0
+
 ## 0.34.0 (2026-10-23)
 
 ### 🚀 Features
