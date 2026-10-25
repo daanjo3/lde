@@ -1,3 +1,9 @@
+## 0.38.1 (2026-10-25)
+
+### 🩹 Fixes
+
+- **pipeline:** fail loudly on an import result the resolver does not recognise ([#951](https://github.com/ldelements/lde/pull/951))
+
 ## 0.38.0 (2026-10-16)
 
 ### 🧱 Updated Dependencies

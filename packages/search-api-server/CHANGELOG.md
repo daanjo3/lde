@@ -1,3 +1,9 @@
+## 0.26.1 (2026-10-25)
+
+### 🧱 Updated Dependencies
+
+- Updated @lde/search-typesense to 0.36.1
+
 ## 0.26.0 (2026-10-23)
 
 ### 🧱 Updated Dependencies
