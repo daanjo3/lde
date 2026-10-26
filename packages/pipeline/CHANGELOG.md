@@ -1,3 +1,42 @@
+## 0.39.0 (2026-10-26)
+
+### 🚀 Features
+
+- ⚠️  **search-typesense:** skip and report documents a collection cannot index ([#954](https://github.com/ldelements/lde/pull/954))
+
+### ⚠️  Breaking Changes
+
+- **search-typesense:** skip and report documents a collection cannot index  ([#954](https://github.com/ldelements/lde/pull/954))
+  a document Typesense refuses no longer fails its dataset; the
+  dataset goes live without it unless more than maxRejectedShare of its documents
+  are left out. Set maxRejectedShare: 0 to fail a dataset on its first rejection."
+  M	docs/reference/pipeline.md
+  M	docs/reference/search-typesense.md
+  M	packages/pipeline-console-reporter/src/consoleReporter.ts
+  M	packages/pipeline-console-reporter/test/consoleReporter.test.ts
+  M	packages/pipeline-console-reporter/vite.config.ts
+  M	packages/pipeline/src/combineReporters.ts
+  M	packages/pipeline/src/pipeline.ts
+  M	packages/pipeline/src/progressReporter.ts
+  M	packages/pipeline/src/writer/writer.ts
+  M	packages/pipeline/test/combineReporters.test.ts
+  M	packages/pipeline/test/pipeline.test.ts
+  M	packages/pipeline/vite.config.ts
+  M	packages/search-pipeline/src/search-index-writer.ts
+  M	packages/search-pipeline/test/search-index-writer.test.ts
+  M	packages/search-typesense/src/blue-green-rebuild.ts
+  M	packages/search-typesense/src/documents.ts
+  M	packages/search-typesense/src/in-place-rebuild.ts
+  M	packages/search-typesense/src/rebuild-support.ts
+  M	packages/search-typesense/test/blue-green-rebuild.test.ts
+  M	packages/search-typesense/test/documents.test.ts
+  M	packages/search-typesense/test/in-place-rebuild.test.ts
+  M	packages/search-typesense/test/rebuild-support.test.ts
+  M	packages/search-typesense/vite.config.ts
+  M	packages/search/src/adapter.ts
+  M	packages/search/src/project.ts
+  A	packages/search/test/missing-required-fields.test.ts
+
 ## 0.38.1 (2026-10-25)
 
 ### 🩹 Fixes
