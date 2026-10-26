@@ -1,3 +1,9 @@
+## 0.32.1 (2026-10-26)
+
+### 🩹 Fixes
+
+- **search:** declare the package free of side effects ([#956](https://github.com/ldelements/lde/pull/956))
+
 ## 0.32.0 (2026-10-26)
 
 ### 🚀 Features
