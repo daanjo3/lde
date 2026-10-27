@@ -1,3 +1,9 @@
+## 0.25.4 (2026-10-27)
+
+### 🚀 Features
+
+- **search-indexer:** pass replaceJsonLdContext to the QLever import ([#963](https://github.com/ldelements/lde/pull/963))
+
 ## 0.25.3 (2026-10-27)
 
 ### 🧱 Updated Dependencies
