@@ -1,3 +1,9 @@
+## 0.3.1 (2026-10-27)
+
+### 🚀 Features
+
+- let consumers replace remote JSON-LD contexts ([#962](https://github.com/ldelements/lde/pull/962))
+
 ## 0.3.0 (2026-10-15)
 
 ### 🧱 Updated Dependencies
