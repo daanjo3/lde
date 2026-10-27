@@ -1,3 +1,9 @@
+## 0.39.1 (2026-10-27)
+
+### 🔥 Performance
+
+- **pipeline:** inject a batch’s VALUES into each UNION branch ([#957](https://github.com/ldelements/lde/pull/957))
+
 ## 0.39.0 (2026-10-26)
 
 ### 🚀 Features
