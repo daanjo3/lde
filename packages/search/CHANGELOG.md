@@ -1,3 +1,9 @@
+## 0.32.3 (2026-10-28)
+
+### 🩹 Fixes
+
+- **search:** read deep-time years beyond Date as xsd:gYear ([#967](https://github.com/ldelements/lde/pull/967))
+
 ## 0.32.2 (2026-10-28)
 
 This was a version bump only for @lde/search to align it with other projects, there were no code changes.
