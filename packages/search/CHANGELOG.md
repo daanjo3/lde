@@ -1,3 +1,29 @@
+## 0.33.0 (2026-10-28)
+
+### 🚀 Features
+
+- ⚠️  **search:** hand rebuild requests to the run holding the lock ([#970](https://github.com/ldelements/lde/pull/970))
+
+### ⚠️  Breaking Changes
+
+- **search:** hand rebuild requests to the run holding the lock  ([#970](https://github.com/ldelements/lde/pull/970))
+  import RebuildAlreadyRunning from @lde/search instead of
+  @lde/search-typesense."
+  A	docs/decisions/0030-hand-a-rebuild-request-to-the-run-that-holds-the-lock.md
+  M	docs/reference/search-typesense.md
+  M	docs/reference/search.md
+  M	packages/search-typesense/src/index.ts
+  M	packages/search-typesense/src/lock.ts
+  A	packages/search-typesense/src/rebuild-requests.ts
+  M	packages/search-typesense/test/blue-green-rebuild.test.ts
+  M	packages/search-typesense/test/in-place-rebuild.test.ts
+  A	packages/search-typesense/test/rebuild-requests.test.ts
+  M	packages/search-typesense/vite.config.ts
+  M	packages/search/src/adapter.ts
+  M	packages/search/src/index.ts
+  A	packages/search/src/rebuild.ts
+  A	packages/search/test/rebuild.test.ts
+
 ## 0.32.3 (2026-10-28)
 
 ### 🩹 Fixes
