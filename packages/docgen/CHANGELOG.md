@@ -1,3 +1,9 @@
+## 0.8.1 (2026-10-28)
+
+### 🩹 Fixes
+
+- **docgen:** keep shapes in the order of the source file ([#964](https://github.com/ldelements/lde/pull/964))
+
 ## 0.8.0 (2026-10-15)
 
 This was a version bump only for @lde/docgen to align it with other projects, there were no code changes.
