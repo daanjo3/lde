@@ -1,0 +1,142 @@
+# Fork-only: publishes the packages that differ from upstream as tarballs on a
+# GitHub prerelease, so a consumer can install them by URL until the changes
+# are merged upstream. Lives only on the `fork-release` branch – never upstream.
+name: Fork release
+
+on:
+  push:
+    branches:
+      - fork-release
+  workflow_dispatch:
+
+concurrency:
+  group: fork-release
+  cancel-in-progress: true
+
+permissions:
+  contents: write # create and delete releases and tags
+
+env:
+  UPSTREAM: https://github.com/ldelements/lde.git
+  KEEP_RELEASES: 2 # older fork-* releases are deleted, so stale lockfiles keep working for one push
+
+jobs:
+  release:
+    if: github.repository != 'ldelements/lde'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Find packages that differ from upstream
+        id: changed
+        run: |
+          git fetch --no-tags "$UPSTREAM" main
+          base=$(git merge-base HEAD FETCH_HEAD)
+          names=()
+          for dir in $(git diff --name-only "$base" HEAD -- packages/ | cut -d/ -f2 | sort -u); do
+            manifest="packages/$dir/package.json"
+            [ -f "$manifest" ] || continue
+            [ "$(jq -r '.private // false' "$manifest")" = "true" ] && continue
+            names+=("$(jq -r .name "$manifest")")
+          done
+          if [ ${#names[@]} -eq 0 ]; then
+            echo "No publishable packages differ from upstream."
+          fi
+          echo "Packages: ${names[*]}"
+          echo "projects=$(IFS=,; echo "${names[*]}")" >> "$GITHUB_OUTPUT"
+
+      - name: Build and test
+        if: steps.changed.outputs.projects != ''
+        run: npx nx run-many -t typecheck test build --projects="${{ steps.changed.outputs.projects }}"
+
+      # Manifests are changed in the CI checkout only, never committed. Each
+      # forked package gets a `-fork.<sha>` prerelease version, and references
+      # between forked packages are pinned to this release, so a tarball never
+      # resolves a sibling from npm: a dependency points at the sibling's
+      # tarball URL, a peer dependency at its exact fork version (which the
+      # consumer installs from that URL).
+      - name: Pack with fork prerelease versions
+        if: steps.changed.outputs.projects != ''
+        run: |
+          short=$(git rev-parse --short HEAD)
+          base_url="https://github.com/$GITHUB_REPOSITORY/releases/download/fork-$short"
+          mkdir -p fork-dist
+          IFS=, read -ra names <<< "${{ steps.changed.outputs.projects }}"
+
+          manifest_of() { grep -l "\"name\": \"$1\"" packages/*/package.json; }
+          tarball_of() { echo "${1#@}" | tr / -; }
+
+          fork='{}'
+          for name in "${names[@]}"; do
+            fork=$(jq --arg n "$name" \
+              --arg v "$(jq -r .version "$(manifest_of "$name")")-fork.$short" \
+              --arg u "$base_url/$(tarball_of "$name").tgz" \
+              '. + {($n): {version: $v, url: $u}}' <<< "$fork")
+          done
+          echo "$fork"
+
+          for name in "${names[@]}"; do
+            manifest=$(manifest_of "$name")
+            jq --arg n "$name" --argjson fork "$fork" '
+              def pin(section; field):
+                if .[section] then
+                  .[section] |= with_entries(
+                    if $fork[.key] then .value = $fork[.key][field] else . end)
+                else . end;
+              .version = $fork[$n].version
+              | pin("dependencies"; "url")
+              | pin("optionalDependencies"; "url")
+              | pin("peerDependencies"; "version")
+            ' "$manifest" > "$manifest.tmp"
+            mv "$manifest.tmp" "$manifest"
+            jq '{name, version, dependencies, peerDependencies}' "$manifest"
+            file=$(npm pack -w "$name" --pack-destination fork-dist --json | jq -r '.[0].filename')
+            mv "fork-dist/$file" "fork-dist/$(tarball_of "$name").tgz"
+          done
+          ls -l fork-dist
+
+      - name: Create prerelease
+        if: steps.changed.outputs.projects != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="fork-$(git rev-parse --short HEAD)"
+          base_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$tag"
+          IFS=, read -ra names <<< "${{ steps.changed.outputs.projects }}"
+          {
+            echo "Fork build of \`$GITHUB_SHA\`. Add to the consumer's \`package.json\`:"
+            echo
+            echo '```json'
+            printf '%s\n' "${names[@]}" | jq -R . | jq -s --arg base "$base_url" '{
+              dependencies: (map({key: ., value: "\($base)/\(ltrimstr("@") | sub("/"; "-")).tgz"}) | from_entries),
+              overrides: (map({key: ., value: "$\(.)"}) | from_entries)
+            }'
+            echo '```'
+          } > fork-dist/notes.md
+          # Re-running for the same commit replaces its release.
+          gh release delete "$tag" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$tag" fork-dist/*.tgz \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "$tag" \
+            --notes-file fork-dist/notes.md
+
+      - name: Delete older fork releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 100 --json tagName,createdAt \
+            --jq "[.[] | select(.tagName | startswith(\"fork-\"))] | sort_by(.createdAt) | reverse | .[$KEEP_RELEASES:][] | .tagName" |
+            while read -r tag; do
+              gh release delete "$tag" --cleanup-tag --yes
+            done
