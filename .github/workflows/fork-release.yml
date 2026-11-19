@@ -19,6 +19,9 @@ permissions:
 env:
   UPSTREAM: https://github.com/ldelements/lde.git
   KEEP_RELEASES: 2 # older fork-* releases are deleted, so stale lockfiles keep working for one push
+  # gh would otherwise pick the `upstream` remote over `origin` and act on
+  # ldelements/lde; releases belong on this fork.
+  GH_REPO: ${{ github.repository }}
 
 jobs:
   release:
