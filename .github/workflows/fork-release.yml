@@ -62,9 +62,16 @@ jobs:
           echo "Packages: ${names[*]}"
           echo "projects=$(IFS=,; echo "${names[*]}")" >> "$GITHUB_OUTPUT"
 
-      - name: Build and test
+      - name: Typecheck and build
         if: steps.changed.outputs.projects != ''
-        run: npx nx run-many -t typecheck test build --projects="${{ steps.changed.outputs.projects }}"
+        run: npx nx run-many -t typecheck build --projects="${{ steps.changed.outputs.projects }}"
+
+      # One test task at a time: the suites start local SPARQL endpoints and
+      # have timing-sensitive tests that time out when sharing the runner with
+      # builds and other suites.
+      - name: Test
+        if: steps.changed.outputs.projects != ''
+        run: npx nx run-many -t test --projects="${{ steps.changed.outputs.projects }}" --parallel=1
 
       # Manifests are changed in the CI checkout only, never committed. Each
       # forked package gets a `-fork.<sha>` prerelease version, and references
