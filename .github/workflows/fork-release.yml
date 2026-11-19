@@ -25,10 +25,12 @@ jobs:
     if: github.repository != 'ldelements/lde'
     runs-on: ubuntu-latest
     steps:
+      # Full clone, no partial-clone filter: in a partial clone, git lazily
+      # fetches missing objects from the fork, which lacks upstream-only
+      # commits, so diffing against upstream fails.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          filter: tree:0
 
       - uses: actions/setup-node@v7
         with:
@@ -40,8 +42,10 @@ jobs:
       - name: Find packages that differ from upstream
         id: changed
         run: |
-          git fetch --no-tags "$UPSTREAM" main
-          base=$(git merge-base HEAD FETCH_HEAD)
+          git remote add upstream "$UPSTREAM"
+          git fetch --no-tags upstream main
+          base=$(git merge-base HEAD upstream/main)
+          echo "Diffing against merge base $base"
           names=()
           for dir in $(git diff --name-only "$base" HEAD -- packages/ | cut -d/ -f2 | sort -u); do
             manifest="packages/$dir/package.json"
